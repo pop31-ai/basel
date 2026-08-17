@@ -187,6 +187,31 @@ def cmd_bi(args):
         rows = bi.monthly(d_from, d_to)
         cols = ["Месяц", "Дт", "Кт"]
         data = [[r["month"], fmt_amount(r["debit"]), fmt_amount(r["credit"])] for r in rows]
+    elif args.kind == "profit":
+        rows = bi.profit_monthly(d_from, d_to)
+        cols = ["Месяц", "Выручка", "Расходы", "Прибыль"]
+        data = [[r["month"], fmt_amount(r["revenue"]), fmt_amount(r["expenses"]), fmt_amount(r["profit"])] for r in rows]
+    elif args.kind == "partners":
+        rows = bi.counterparties(args.account, args.dimension, d_from, d_to)
+        cols = [args.dimension, "Дт", "Кт", "Нетто"]
+        data = [[r["key"][:28], fmt_amount(r["debit"]), fmt_amount(r["credit"]), fmt_amount(r["net"])] for r in rows]
+    elif args.kind == "aging":
+        accounts = (args.accounts or "62,60,76").split(",")
+        rows = bi.aging([a.strip() for a in accounts], d_to, args.dimension)
+        cols = ["Счет", "Наименование", "Сальдо", "Тип", "Срок"]
+        data = [[r["account"], r["name"][:24], fmt_amount(r["balance"]), r["type"], r["age"]] for r in rows]
+    elif args.kind == "crosstab":
+        rows = bi.crosstab(args.dimension, d_from, d_to)
+        months = [m.strftime("%Y-%m") for m in bi._months(d_from, d_to)]
+        cols = [args.dimension] + months
+        data = [[r["key"][:20]] + [fmt_amount(r[m]) for m in months] for r in rows]
+    elif args.kind == "kpi":
+        k = bi.kpi(d_from, d_to)
+        rows = [{"k": "Выручка", "v": k["revenue"]}, {"k": "Расходы", "v": k["expenses"]},
+                {"k": "Прибыль", "v": k["profit"]}] + \
+               [{"k": f"Топ: {r['code']} {r['name'][:16]}", "v": r["amount"]} for r in k["top_accounts"]]
+        cols = ["Показатель", "Значение"]
+        data = [[r["k"], fmt_amount(r["v"])] for r in rows]
     else:  # top
         rows = bi.top_accounts(d_from, d_to)
         cols = ["Счет", "Наименование", "Оборот"]
@@ -491,10 +516,11 @@ def main(argv=None):
     sp.add_argument("--to")
     sp.set_defaults(func=cmd_ofr)
 
-    sp = sub.add_parser("bi", help="BI: pivot|monthly|top")
-    sp.add_argument("kind", choices=["pivot", "monthly", "top"])
+    sp = sub.add_parser("bi", help="BI: pivot|monthly|profit|partners|aging|crosstab|kpi|top")
+    sp.add_argument("kind", choices=["pivot", "monthly", "profit", "partners", "aging", "crosstab", "kpi", "top"])
     sp.add_argument("--dimension", default="buyer")
     sp.add_argument("--account")
+    sp.add_argument("--accounts", help="для aging: список счетов через запятую (62,60,76)")
     sp.add_argument("--from", dest="from_")
     sp.add_argument("--to")
     sp.set_defaults(func=cmd_bi)

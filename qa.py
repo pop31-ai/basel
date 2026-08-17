@@ -65,19 +65,36 @@ class TestData:
         d_from = d_from or date(2026, 2, 1)
         d_to = d_to or date(2026, 12, 31)
         pairs = [
-            ("51", "62"), ("62", "90"), ("60", "51"), ("10", "60"),
-            ("20", "70"), ("26", "70"), ("90", "68"), ("50", "51"),
-            ("51", "76"), ("41", "60"), ("20", "10"), ("44", "60"),
+            # покупатели (дебиторка 62)
+            ("51", "62.01", "buyer", "ООО Ромашка"), ("51", "62.01", "buyer", "ЗАО Вектор"),
+            ("62.01", "90.1", "buyer", "ООО Ромашка"), ("62.01", "90.1", "buyer", "ЗАО Вектор"),
+            ("62.01", "90.1", "buyer", "ИП Иванов"), ("51", "62.01", "buyer", "ИП Иванов"),
+            # поставщики (кредиторка 60)
+            ("10", "60.01", "supplier", "ООО Снабжение"), ("41", "60.01", "supplier", "ТД Мегаполис"),
+            ("60.01", "51", "supplier", "ООО Снабжение"), ("60.01", "51", "supplier", "ТД Мегаполис"),
+            # затраты и персонал
+            ("20", "70", "employee", "Сотрудники"), ("20", "69", "employee", "Сотрудники"),
+            ("26", "10", "employee", "Офис"), ("44", "60.01", "supplier", "ООО Маркетинг"),
+            # деньги
+            ("50", "51", None, None), ("51", "50", None, None), ("51", "76", "partner", "Банк"),
+            # прочие доходы/расходы
+            ("76", "91.1", "partner", "Прочие контрагенты"), ("91.2", "51", "partner", "Прочие контрагенты"),
+            # себестоимость и НДС
+            ("90.2", "41", None, None), ("90.2", "20", None, None), ("90.3", "68", None, None),
         ]
         entries = []
         span = (d_to - d_from).days
         for i in range(n):
             d = d_from + timedelta(days=self.rng.randint(0, span))
-            dr, cr = self.rng.choice(pairs)
+            dr, cr, dim, val = self.rng.choice(pairs)
             if not chart.get(dr) or not chart.get(cr):
                 continue
             amt = money(self.rng.randint(100, 90000))
-            entries.append((d.isoformat(), f"Случайная операция #{i+1}", [(dr, cr, str(amt))]))
+            analytics = {}
+            if dim:
+                analytics[dim] = val
+            entries.append((d.isoformat(), f"Случайная операция #{i+1}",
+                            [(dr, cr, str(amt), analytics)]))
         return entries
 
     # ---------- внешние файлы для ETL ----------
@@ -327,7 +344,12 @@ class LoadComplex:
         numbering = Numbering(self.store)
         for d_str, desc, pairs in items:
             d = date.fromisoformat(d_str)
-            lines = [Line(p[0], p[1], money(p[2])) for p in pairs]
+            lines = []
+            for p in pairs:
+                if len(p) >= 4:
+                    lines.append(Line(p[0], p[1], money(p[2]), dict(p[3])))
+                else:
+                    lines.append(Line(p[0], p[1], money(p[2])))
             no = numbering.next("entry", d)
             journal.post(d, lines, desc=desc, no=no, source="qa")
 

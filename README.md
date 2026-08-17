@@ -34,6 +34,7 @@ python -m buh --dir buhdata basel                # Basel III нормативы
 | `balance [--asof]` | бухгалтерский баланс |
 | `ofr [--from] [--to]` | отчет о финансовых результатах |
 | `bi pivot / monthly / top` | BI: разрез по аналитике, помесячно, топ-счета |
+| `bi profit / partners / aging / crosstab / kpi` | BI: прибыль по месяцам, контрагенты, старение ДЗ/КЗ, аналитика × месяц, KPI |
 | `tax vat / profit` | налоговые декларации (НДС, прибыль) + сдача (отметка о приеме) |
 | `basel [--asof]` | Basel III: нормативы Н1.0/Н1.1/Н1.2 (инструкция ЦБ 199-И, упрощенно) |
 | `etl preview / load / sample` | ETL: загрузка выписок/файлов в журнал по правилам |
@@ -65,7 +66,18 @@ python -m buh chart load my_chart.csv    # колонки: code,name,kind,group
 python -m buh post "Дт 51 Кт 62 25000|buyer=ООО Ромашка;contract=12-А;project=Стройка"
 ```
 
-BI разрез: `python -m buh bi pivot --dimension buyer`.
+Команды BI (отчеты в `reports/` PDF/PNG):
+
+```
+python -m buh bi pivot    --dimension buyer --account 62   # разрез по аналитике счета
+python -m buh bi partners --dimension buyer --account 62.01 # топ контрагентов (Дт/Кт/нетто)
+python -m buh bi monthly  --from 2026-01-01 --to 2026-12-31 # обороты помесячно
+python -m buh bi profit   --from 2026-01-01 --to 2026-12-31 # выручка/расходы/прибыль по месяцам
+python -m buh bi crosstab --dimension buyer --from 2026-01-01 --to 2026-12-31  # аналитика × месяц
+python -m buh bi aging    --accounts 62,60 --from 2026-01-01 --to 2026-12-31   # старение задолженности
+python -m buh bi kpi      --from 2026-01-01 --to 2026-12-31 # выручка/расходы/прибыль + топ счетов
+python -m buh bi top      --from 2026-01-01 --to 2026-12-31 # топ счетов по оборотам
+```
 
 ## Шаблонные операции
 
