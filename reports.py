@@ -43,28 +43,26 @@ class Reports:
         close_dr, close_cr = self.journal.closing(as_of)
         assets, liabilities, equity = [], [], []
         codes = set(close_dr) | set(close_cr)
-        off = []
-        # Финансовый результат: нераспределенная прибыль уже закрыта на 99,
-        # плюс доходы/расходы, не закрытые на 90/91 (сальдо R-счетов).
         profit = money(0)
-        for c in codes:
+        for c in sorted(codes):
             acc = self.chart.get(c)
             if acc is None or acc.group == "З":
                 continue
             net = close_dr.get(c, money(0)) - close_cr.get(c, money(0))
-            if acc.kind == "R":
-                profit += max(-net, money(0))     # кредитовое сальдо = нераспределенная прибыль
-            elif net == 0:
+            if net == 0:
                 continue
-            elif acc.kind in ("A", "E"):
-                if net > 0:
-                    assets.append((c, acc.name, net))
-            elif acc.kind == "P":
-                if net < 0:
-                    liabilities.append((c, acc.name, -net))
+            if acc.kind == "R":
+                # доходы/расходы до закрытия периода: кредитовое сальдо = прибыль
+                profit += max(-net, money(0))
             elif acc.kind == "K":
-                if net < 0:
-                    equity.append((c, acc.name, -net))
+                # капитал — на пассивной стороне (норма: кредитовое сальдо)
+                equity.append((c, acc.name, abs(net)))
+            elif net > 0:
+                # дебетовое сальдо -> актив (или обратное сальдо пассива)
+                assets.append((c, acc.name, net))
+            else:
+                # кредитовое сальдо -> пассив (или обратное сальдо актива)
+                liabilities.append((c, acc.name, -net))
         total_a = sum(x[2] for x in assets)
         total_l = sum(x[2] for x in liabilities) + sum(x[2] for x in equity) + profit
         return {"assets": assets, "liabilities": liabilities, "equity": equity,

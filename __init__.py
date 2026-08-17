@@ -11,9 +11,10 @@ from .reports import Reports
 from .bi import BI
 from .tax import Tax
 from .basel import Basel
+from .etl import ETL
 
 __all__ = [
     "Account", "Entry", "Line", "TemplateOp", "money",
     "Store", "Chart", "builtin", "load_file",
-    "Numbering", "Journal", "Templates", "Reports", "BI", "Tax", "Basel",
+    "Numbering", "Journal", "Templates", "Reports", "BI", "Tax", "Basel", "ETL",
 ]

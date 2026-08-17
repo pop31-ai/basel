@@ -1,0 +1,49 @@
+{
+  "name": "bank_alfa",
+  "source": {
+    "type": "csv",
+    "path": "etl/bank_alfa.csv",
+    "delimiter": ";",
+    "encoding": "utf-8",
+    "date_format": "%d.%m.%Y"
+  },
+  "columns": {
+    "date": "Дата",
+    "desc": "Назначение платежа",
+    "counterparty": "Контрагент",
+    "ref": "№ док",
+    "amount": "Сумма"
+  },
+  "rules": [
+    {
+      "when": {"counterparty": "ИП Иванов"},
+      "debit": "51",
+      "credit": "62",
+      "amount": "{amount}",
+      "analytics": {"buyer": "ИП Иванов"}
+    },
+    {
+      "when": {"desc": ".*зарплат.*"},
+      "debit": "70",
+      "credit": "51",
+      "amount": "{amount}"
+    },
+    {
+      "when": {"desc": ".*канц.*"},
+      "debit": "26",
+      "credit": "51",
+      "amount": "{amount}"
+    },
+    {
+      "when": {"desc": ".*услуг.*"},
+      "debit": "51",
+      "credit": "76",
+      "amount": "{amount}"
+    },
+    {
+      "always": true,
+      "skip": true
+    }
+  ],
+  "dedup_key": "ref"
+}

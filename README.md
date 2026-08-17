@@ -36,6 +36,7 @@ python -m buh --dir buhdata basel                # Basel III нормативы
 | `bi pivot / monthly / top` | BI: разрез по аналитике, помесячно, топ-счета |
 | `tax vat / profit` | налоговые декларации (НДС, прибыль) + сдача (отметка о приеме) |
 | `basel [--asof]` | Basel III: нормативы Н1.0/Н1.1/Н1.2 (инструкция ЦБ 199-И, упрощенно) |
+| `etl preview / load / sample` | ETL: загрузка выписок/файлов в журнал по правилам |
 | `doc inv / act / pay` | печать счетов, актов, платежек (PDF + PNG) |
 | `bpmn <шаблон>` | схема проводок в нотации BPMN (SVG) |
 
@@ -112,8 +113,25 @@ print(Reports(j, chart).balance(date(2026, 4, 30)))
 
 `core` — типы · `storage` — файлы · `charts` — системы счетов · `numbering` —
 нумерация · `journal` — журнал и остатки · `templates` — шаблоны · `reports` —
-ОСВ/баланс/ОФР · `bi` — BI · `tax` — налоги · `basel` — Basel III · `documents` —
-печать · `bpmn` — схемы BPMN · `cli` — командная строка.
+ОСВ/баланс/ОФР · `bi` — BI · `tax` — налоги · `basel` — Basel III · `etl` — загрузка
+выписок · `documents` — печать · `bpmn` — схемы BPMN · `cli` — командная строка.
+
+## ETL (извлечение → преобразование → загрузка)
+
+Импорт банковских выписок и других внешних файлов (CSV/JSON/JSONL/XLSX)
+в журнал проводок по правилам:
+
+```
+python -m buh etl sample etl\bank_alfa.json     # сгенерировать пример CSV-выписки
+python -m buh etl preview etl\bank_alfa.json    # посмотреть результат преобразования
+python -m buh etl load   etl\bank_alfa.json     # загрузить в журнал (--dry — без записи)
+```
+
+Конфиг (`etl\bank_alfa.json`): источник (тип, разделитель, кодировка, формат даты),
+маппинг колонок (дата/описание/сумма/реф/контрагент), правила превращения записей
+в проводки (`debit`, `credit`, `amount` с подстановкой `{amount}`/`{колонка}`
+и арифметикой), дедупликация по ключу `dedup_key`. Неподходящие записи
+пропускаются правилом `{"always": true, "skip": true}`.
 
 ## Basel III (коротко)
 

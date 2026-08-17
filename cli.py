@@ -318,6 +318,48 @@ def cmd_basel(args):
     print(f"  PDF: {paths['pdf']}\n  PNG: {paths['png']}\n  JSON: {store.base}/reports/basel.json")
 
 
+def cmd_etl(args):
+    from .etl import ETL
+    etl = ETL(Store(args.dir), args.config)
+    if args.action == "preview":
+        for item in etl.preview(args.file, limit=args.limit):
+            print(json.dumps(item, ensure_ascii=False, indent=2))
+        return
+    if args.action == "sample":
+        _etl_sample(Store(args.dir), args.config)
+        return
+    res = etl.run(args.file, dry_run=args.dry)
+    print(f"ETL '{etl.name}': источник {res['n_source']} записей, "
+          f"загружено {res['loaded']}, пропущено {res['skipped']}, ошибок {len(res['errors'])}"
+          + (" (сухой прогон)" if args.dry else ""))
+    for err in res["errors"][:5]:
+        print(f"  ошибка #{err['idx']}: {err['error']}")
+
+
+def _etl_sample(store: Store, config: str) -> None:
+    """Создает пример CSV-выписки по конфигу ETL."""
+    import json as _json
+    from pathlib import Path
+    cfg = _json.loads(Path(config).read_text(encoding="utf-8"))
+    src = cfg.get("source", {})
+    path = Path(src.get("path", "etl_sample.csv"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    cols = cfg.get("columns", {})
+    rows = [
+        ["01.04.2026", "Оплата по счету №12", "ИП Иванов", "ПБ-101", "50000.00"],
+        ["02.04.2026", "Выплата зарплаты", "ООО Ромашка", "ПБ-102", "-30000.00"],
+        ["03.04.2026", "Покупка канцтоваров", "Магазин Офис", "ПБ-103", "-2000.00"],
+        ["04.04.2026", "Оплата за услуги", "ООО Сервис", "ПБ-104", "15000.00"],
+    ]
+    order = ["date", "desc", "counterparty", "ref", "amount"]
+    header = ";".join(cols.get(k, k) for k in order)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(header + "\n")
+        for r in rows:
+            f.write(";".join(r) + "\n")
+    print(f"Пример файла создан: {path}")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="buh", description="Ядро бухгалтерского учета (файловая БД)")
     p.add_argument("--dir", default="buhdata", help="каталог данных")
@@ -395,6 +437,14 @@ def main(argv=None):
     sp = sub.add_parser("basel", help="Basel III: нормативы капитала")
     sp.add_argument("--asof")
     sp.set_defaults(func=cmd_basel)
+
+    sp = sub.add_parser("etl", help="ETL: загрузка данных из внешних файлов")
+    sp.add_argument("action", choices=["preview", "load", "sample"])
+    sp.add_argument("config", help="путь к JSON-конфигу ETL")
+    sp.add_argument("--file", help="исходный файл (переопределяет path в конфиге)")
+    sp.add_argument("--dry", action="store_true", help="сухой прогон без записи")
+    sp.add_argument("--limit", type=int, default=20)
+    sp.set_defaults(func=cmd_etl)
 
     sp = sub.add_parser("demo", help="демо-данные")
     sp.set_defaults(func=cmd_demo)
