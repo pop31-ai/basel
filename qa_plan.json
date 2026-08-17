@@ -1,0 +1,33 @@
+{
+  "name": "QA Комплекс загрузки",
+  "steps": [
+    {
+      "type": "chart",
+      "system": "ru"
+    },
+    {
+      "type": "templates"
+    },
+    {
+      "type": "scenario",
+      "scenario": "closed_year"
+    },
+    {
+      "type": "etl",
+      "config": "etl/bank_alfa.json",
+      "file": "bank_alfa.csv"
+    },
+    {
+      "type": "etl",
+      "config": "invoices_etl.json",
+      "file": "invoices.json"
+    },
+    {
+      "type": "scenario",
+      "scenario": "random",
+      "n": 60,
+      "from": "2026-02-01",
+      "to": "2026-12-31"
+    }
+  ]
+}

@@ -96,6 +96,23 @@ RU_CHART: List[Dict] = [
     dict(code="97", name="Расходы будущих периодов",       kind="A"),
     dict(code="98", name="Доходы будущих периодов",        kind="P"),
     dict(code="99", name="Прибыли и убытки",               kind="P"),
+    # субсчета (типовые)
+    dict(code="60.01", name="Расчеты с поставщиками и подрядчиками", kind="P"),
+    dict(code="60.02", name="Авансы выданные",               kind="A"),
+    dict(code="62.01", name="Расчеты с покупателями и заказчиками", kind="A"),
+    dict(code="62.02", name="Авансы полученные",             kind="P"),
+    dict(code="68.02", name="Расчеты по НДС",                kind="P"),
+    dict(code="68.04", name="Расчеты по налогу на прибыль",  kind="P"),
+    dict(code="69.01", name="Взносы в ФСС",                  kind="P"),
+    dict(code="69.02", name="Взносы в ПФР",                  kind="P"),
+    dict(code="69.03", name="Взносы в ФФОМС",                kind="P"),
+    dict(code="90.1",  name="Выручка",                       kind="R"),
+    dict(code="90.2",  name="Себестоимость продаж",          kind="E"),
+    dict(code="90.3",  name="НДС с продаж",                  kind="E"),
+    dict(code="90.9",  name="Прибыль/убыток от продаж",      kind="E"),
+    dict(code="91.1",  name="Прочие доходы",                 kind="R"),
+    dict(code="91.2",  name="Прочие расходы",                kind="E"),
+    dict(code="91.9",  name="Сальдо прочих доходов/расходов", kind="E"),
 ]
 
 

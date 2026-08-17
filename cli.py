@@ -360,6 +360,92 @@ def _etl_sample(store: Store, config: str) -> None:
     print(f"Пример файла создан: {path}")
 
 
+def cmd_qa(args):
+    from .qa import LoadComplex, TestData, Checks, run_qa
+    from .documents import Renderer, render_report, fmt_amount
+    from decimal import Decimal
+    store = Store(args.dir)
+    if args.action == "plan":
+        # создать план загрузки и тестовые файлы
+        from . import qa as qa_mod
+        plan_path = Path(args.plan) if args.plan else Path("qa_plan.json")
+        td = TestData(seed=42)
+        base = plan_path.parent
+        bank = td.bank_statement(str(base / "bank_alfa.csv"))
+        inv = td.invoices_json(str(base / "invoices.json"))
+        plan = {
+            "name": "QA Комплекс загрузки",
+            "steps": [
+                {"type": "chart", "system": "ru"},
+                {"type": "templates"},
+                {"type": "scenario", "scenario": "closed_year"},
+                {"type": "etl", "config": "etl/bank_alfa.json",
+                 "file": str(bank.relative_to(base)) if str(bank).startswith(str(base)) else str(bank)},
+                {"type": "etl", "config": "invoices_etl.json",
+                 "file": str(inv.relative_to(base)) if str(inv).startswith(str(base)) else str(inv)},
+                {"type": "scenario", "scenario": "random", "n": 60,
+                 "from": "2026-02-01", "to": "2026-12-31"},
+            ],
+        }
+        plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+        # вспомогательный ETL-конфиг для счетов JSON
+        inv_cfg = {
+            "name": "invoices",
+            "source": {"type": "json", "path": str(inv)},
+            "columns": {"date": "dt", "desc": "note", "amount": "sum", "ref": "id"},
+            "rules": [
+                {"when": {"note": "invoice.*"}, "debit": "51", "credit": "62",
+                 "amount": "{amount}"},
+                {"always": True, "skip": True},
+            ],
+            "dedup_key": "ref",
+        }
+        Path(base / "invoices_etl.json").write_text(
+            json.dumps(inv_cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"План и тестовые данные созданы: {plan_path}, {bank}, {inv}")
+        return
+    if args.action == "run":
+        from .qa import LoadComplex as LC
+        plan = LoadComplex.load_plan(args.plan)
+        result = run_qa(store, plan)
+        _print_qa(result)
+        r = Renderer(title="QA отчёт", subtitle=f"{result['name']} — {result['at']}",
+                     cols=["Проверка", "Статус", "Детали"],
+                     rows=[[c["name"], "OK" if c.get("ok") else "FAIL",
+                            str(c.get("detail", c.get("error", "")))[:60]] for c in result["checks"]],
+                     foot=[f"Проводок: {result['entries']}   Оценка: {result['score']}   "
+                           f"Вердикт: {result['verdict']}"])
+        paths = render_report("reports", "qa", r, store)
+        store.write_json("reports/qa.json", result)
+        print(f"  PDF: {paths['pdf']}\n  PNG: {paths['png']}\n  JSON: {store.base}/reports/qa.json")
+        return 0 if result["verdict"] == "PASS" else 1
+    if args.action == "check":
+        from .qa import Checks as Ch
+        from .qa import run_qa as _run_qa
+        chart = Chart.from_dict(store.read_json("chart.json"))
+        journal = Journal(store, chart)
+        checks = Ch(journal, chart, store).run_all()
+        ok_checks = sum(1 for c in checks if c.get("ok"))
+        result = {"name": "QA (существующие данные)", "at": date.today().isoformat(),
+                  "dir": str(store.base), "load": {"log": [], "steps": 0},
+                  "checks": checks, "entries": len(journal.entries()),
+                  "score": f"{ok_checks}/{len(checks)}",
+                  "verdict": "PASS" if ok_checks == len(checks) else "FAIL"}
+        _print_qa(result)
+        return 0 if result["verdict"] == "PASS" else 1
+
+
+def _print_qa(result: Dict) -> None:
+    print(f"QA: {result.get('name')} ({result['dir']})")
+    for line in result["load"]["log"]:
+        print("  " + line)
+    print(f"  Проводок: {result['entries']}")
+    for c in result["checks"]:
+        status = "OK  " if c.get("ok") else "FAIL"
+        print(f"  [{status}] {c['name']:<18} {c.get('detail', c.get('error', ''))}")
+    print(f"  Оценка: {result['score']}   Вердикт: {result['verdict']}")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="buh", description="Ядро бухгалтерского учета (файловая БД)")
     p.add_argument("--dir", default="buhdata", help="каталог данных")
@@ -445,6 +531,11 @@ def main(argv=None):
     sp.add_argument("--dry", action="store_true", help="сухой прогон без записи")
     sp.add_argument("--limit", type=int, default=20)
     sp.set_defaults(func=cmd_etl)
+
+    sp = sub.add_parser("qa", help="тестовые данные, комплекс загрузки, проверки")
+    sp.add_argument("action", choices=["plan", "run", "check"])
+    sp.add_argument("--plan", help="путь к плану загрузки")
+    sp.set_defaults(func=cmd_qa)
 
     sp = sub.add_parser("demo", help="демо-данные")
     sp.set_defaults(func=cmd_demo)

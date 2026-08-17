@@ -12,9 +12,11 @@ from .bi import BI
 from .tax import Tax
 from .basel import Basel
 from .etl import ETL
+from .qa import TestData, LoadComplex, Checks, run_qa
 
 __all__ = [
     "Account", "Entry", "Line", "TemplateOp", "money",
     "Store", "Chart", "builtin", "load_file",
     "Numbering", "Journal", "Templates", "Reports", "BI", "Tax", "Basel", "ETL",
+    "TestData", "LoadComplex", "Checks", "run_qa",
 ]

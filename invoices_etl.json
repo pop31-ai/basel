@@ -1,0 +1,28 @@
+{
+  "name": "invoices",
+  "source": {
+    "type": "json",
+    "path": "buh\\invoices.json"
+  },
+  "columns": {
+    "date": "dt",
+    "desc": "note",
+    "amount": "sum",
+    "ref": "id"
+  },
+  "rules": [
+    {
+      "when": {
+        "note": "invoice.*"
+      },
+      "debit": "51",
+      "credit": "62",
+      "amount": "{amount}"
+    },
+    {
+      "always": true,
+      "skip": true
+    }
+  ],
+  "dedup_key": "ref"
+}

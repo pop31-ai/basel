@@ -1,0 +1,40 @@
+{
+  "rows": [
+    {
+      "dt": "2026-03-19",
+      "note": "invoice payment",
+      "sum": "56302",
+      "id": "INV-001"
+    },
+    {
+      "dt": "2026-03-02",
+      "note": "invoice payment",
+      "sum": "4905",
+      "id": "INV-002"
+    },
+    {
+      "dt": "2026-03-03",
+      "note": "invoice payment",
+      "sum": "29657",
+      "id": "INV-003"
+    },
+    {
+      "dt": "2026-03-08",
+      "note": "invoice payment",
+      "sum": "67237",
+      "id": "INV-004"
+    },
+    {
+      "dt": "2026-03-20",
+      "note": "invoice payment",
+      "sum": "4478",
+      "id": "INV-005"
+    },
+    {
+      "dt": "2026-03-18",
+      "note": "invoice payment",
+      "sum": "27062",
+      "id": "INV-006"
+    }
+  ]
+}
